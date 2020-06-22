@@ -80,7 +80,7 @@ def parseROMDIR(file, romdir_location ):
         print(str(i)+'.'+(cc))
         file.seek(file.tell()+2)
         d=parseSIZE (file, file.tell())
-        modules.append([cc,hex(e),hex(d)])
+        modules.append([cc,e,d])
         e=e+d        
         
         
