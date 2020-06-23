@@ -1,10 +1,25 @@
 #PS2 rom unpacker
+#Works well from scph10000 to all slim models
+#Rename your dump to 'rom.bin'
+#Run and follow instructions
+#ALL for all modules or type a number for one module
+#new directory will be created
+#copy modules list with numbers from console
+
+#Как работает:
 #находим модуль RESET в ROMDIR и по смещению определяем
 #конец первого и начало второго модуля
 #читаем второй модуль, который всегда является структурой ROMDIR
 #где расположены размеры всех остальных модулей и их название
-#to-do: implement 16bytes padding in parseROMDIR function
+#Размеры выравниваются по 16 байтам
+
+
+#to-do: implement 16bytes padding in parseROMDIR function - ok
+#to-do: make report file with numbers, names and offsets for packing modules back in to dump
+#to-do: implement command line argument file opening and excetions
+filename = 'rom.bin' ##type yours
 import os
+import sys
 
 
 def romOPEN(romfile): 
@@ -54,12 +69,27 @@ def findROMDIRSIZE( file , romsize ):
         a=[]
         b=[]
 
+def fixSIZE16 ( size ):
+     #Остаток от деления. 16-a=сколько байт добавить
+    zza=size%16
+    zzb=16-zza
+    if zza==0:
+        return size
+    else:
+        return size+zzb
+    
+
 def parseSIZE (file, offset):
     file.seek((offset)) #переходим к байтам размера
     d=(file.read(4)) #читаем их
     f=int("0x"+ (d[::-1]).hex()  ,16) #меняем порядок байт
     return f
-    
+
+def countMODULES (romdir_location):
+    a = romdir_location
+    b=(((a[1])//16)-1)
+    return b
+
 def parseROMDIR(file, romdir_location ):
     print('Modules:')
     #print('')
@@ -79,22 +109,29 @@ def parseROMDIR(file, romdir_location ):
         cc=c.decode('ascii')
         print(str(i)+'.'+(cc))
         file.seek(file.tell()+2)
+        #if (i==0) or (i==1) or (i==2) or (i==3):  #scph-70000 derived
+        #    d=parseSIZE (file, file.tell()) #размер RESET выровнен всегда
+        #else:
         d=parseSIZE (file, file.tell())
-        modules.append([cc,e,d])
-        e=e+d        
+            
+        fd=fixSIZE16(d)
+        modules.append([cc,e,fd,d])
+        e=e+fd        
         
         
     return modules
         
 
 def extractModule(romfile, modules, module_number ):
-    #os.mkdir('modules')
-    os.chdir('modules')
+    
+    
     romfile.seek(modules[module_number][1])
-    print("Module:" + str(modules[module_number][0]) + " extracted")
-    print("Offset:"+hex(modules[module_number][1]))
-    print("Size:"+hex(modules[module_number][2]))
-    print("Size decimal:"+str(modules[module_number][2]))
+    print(str(module_number)+".Module:" + str(modules[module_number][0]) + " extracted")
+    print("    Offset:"+hex(modules[module_number][1]))
+    print("    Size 16byte padding:"+hex(modules[module_number][2]))
+    print("    Size decimal:"+str(modules[module_number][2]))
+    print("    Size as in ROMDIR:"+hex(modules[module_number][3]))
+
     module_out=romfile.read(modules[module_number][2])
     f = open(str(module_number), "wb")
     f.write(module_out)
@@ -105,12 +142,26 @@ def extractModule(romfile, modules, module_number ):
 #structROMDIR = {'name':10,'ext':2,'size':4}
 #Формат записей в ROMDIR
 
-filename = 'rom.bin'
+#filename = 'rom.bin'
+
 size=os.path.getsize(filename)
 romfile=romOPEN(filename)
 romdir_location = findROMDIRSIZE(romfile, size)
 z=parseROMDIR(romfile, romdir_location)
-print(z)
-innum=input("Type module number to extract:")
-extractModule(romfile, z, int(innum))
+#print(z) romdir modules names, sizes and fixed offsets and sizes.
+moddir='modules-'+filename
+try: 
+    os.mkdir(moddir) 
+except OSError as error: 
+    exit     
+os.chdir(moddir)
+modules_count=countMODULES(romdir_location)
+print('Total modules:'+str(modules_count)+' from:0 to:' + str(modules_count-1))
+innum=input("Type module number or ALL to extract one or ALL modules:")
+if innum=='ALL':
+   for i in range(0,modules_count):
+    extractModule(romfile, z, i)
+else:
+    extractModule(romfile, z, int(innum))
 romfile.close()
+input('Type anything to close')
