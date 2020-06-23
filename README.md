@@ -12,6 +12,7 @@ Modules extraction from PS2 rom dump
 (you will see all modules list)
 <br>
 3.Result will be in 'module-rom.bin' directory
+<br>
 4.Don't forget to check headers of latest modules.
 <br>
 The latest ELF file almost everytime is OSDSYS and it's first 3 bytes should be 'ELF'
