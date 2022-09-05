@@ -17,9 +17,10 @@
 #to-do: implement 16bytes padding in parseROMDIR function - ok
 #to-do: make report file with numbers, names and offsets for packing modules back in to dump
 #to-do: implement command line argument file opening and excetions
-filename = 'rom.bin' ##type yours
+#filename = 'rom.bin' ##type yours
 import os
 import sys
+filename = sys.argv[1]
 
 
 def romOPEN(romfile): 
@@ -126,14 +127,16 @@ def extractModule(romfile, modules, module_number ):
     
     
     romfile.seek(modules[module_number][1])
-    print(str(module_number)+".Module:" + str(modules[module_number][0]) + " extracted")
+    print(str(module_number)+".Module: [" + str(modules[module_number][0]) + "] extracted")
     print("    Offset:"+hex(modules[module_number][1]))
     print("    Size 16byte padding:"+hex(modules[module_number][2]))
     print("    Size decimal:"+str(modules[module_number][2]))
     print("    Size as in ROMDIR:"+hex(modules[module_number][3]))
 
     module_out=romfile.read(modules[module_number][2])
-    f = open(str(module_number), "wb")
+    FILENAME = str(modules[module_number][0]).lstrip()
+    
+    f = open(str(module_number) + "@" + FILENAME.rstrip('\x00'), "wb")
     f.write(module_out)
     f.close()
 
@@ -142,7 +145,6 @@ def extractModule(romfile, modules, module_number ):
 #structROMDIR = {'name':10,'ext':2,'size':4}
 #Формат записей в ROMDIR
 
-#filename = 'rom.bin'
 
 size=os.path.getsize(filename)
 romfile=romOPEN(filename)
